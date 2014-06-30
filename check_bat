@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+# very basic plugin to check the battery charge (if you are stangely running on a laptop), only works on localhost
+# roland shoemaker june 2014
 
 use strict;
 use warnings;
