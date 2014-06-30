@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib qw( /usr/lib/nagios/plugins );
+use utils qw(%ERRORS $TIMEOUT &print_revision &support &usage);
+
+my $result;
+my @splited;
+
+$result = `upower -i /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage`;
+
+$result =~ s/^\s+//;
+$result =~ s/\s+//;
+
+@splited = split(/:/, $result,);
+
+if (substr($splited[1], 0, -2) > 25) {
+	print "BATTERY OK - ".substr($splited[1], 0, -1)." percent\n";
+	exit $ERRORS{'OK'};
+} elsif (substr($splited[1], 0, -2) <= 25) {
+	if (substr($splited[1], 0, -2) > 15) {
+		print "BATTERY WARNING - ".substr($splited[1], 0, -1)." percent\n";
+		exit $ERRORS{'WARNING'};
+	} elsif (substr($splited[1], 0, -2) <= 15) {
+		print "BATTERY CRITICAL - ".substr($splited[1], 0, -1)." percent\n";
+		exit $ERRORS{'CRITICAL'};
+	}
+}
