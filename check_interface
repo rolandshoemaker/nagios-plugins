@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib qw( /usr/lib/nagios/plugins );
+use utils qw(%ERRORS $TIMEOUT &print_revision &support &usage);
+
+my @speeds;
+my $interface = $ARGV[0]; # can set this via argument later...
+
+# first pass
+
+my @stats = do {
+	open my $fh, "<", '/proc/net/dev' or die "Can't read /proc/net/dev, broken\n";
+	<$fh>;
+};
+
+for my $line (@stats) {
+	if ($line =~ /^\s*\Q$interface/) {
+		$line =~ s/^\s*//;
+		$line = substr($line, 6, length($line));
+
+		my @packets = split(' ', $line);
+		$speeds[0] = $packets[0]; # in
+		$speeds[1] = $packets[8]; # out
+	}
+}
+
+sleep(1);
+
+# second pass
+
+@stats = ();
+
+@stats = do {
+        open my $fh, "<", '/proc/net/dev' or die "Can't read /proc/net/dev, broken\n";
+        <$fh>;
+};
+
+for my $line (@stats) {
+        if ($line =~ /^\s*\Q$interface/) {
+                $line =~ s/^\s*//;
+                $line = substr($line, 6, length($line));
+
+                my @newpackets = split(' ', $line);
+                $speeds[2] = $newpackets[0]; # in
+		$speeds[3] = $newpackets[8]; # out
+		# print "#DEBUG# \$packets[8] ".$packets[8]."\n";
+        }
+}
+
+my $recieve = ($speeds[2]-$speeds[0]); # bytes
+my $transmit = ($speeds[3]-$speeds[1]); # bytes
+
+if ($recieve < 537000000 && $transmit < 537000000) {
+	print "ETH0 OK - transmit, recieve: ".($transmit*0.0009766)." KB/s, ".($recieve*0.0009766)." KB/s|transmit=".($transmit*0.0009766)."; recieve=".($recieve*0.0009766).";\n";
+	exit $ERRORS{'OK'};
+} else {
+	if ($recieve < 1074000000 && $transmit < 1074000000) {
+		print "ETH0 WARNING - transmit, recieve: ".($transmit*0.0009766)." KB/s, ".($recieve*0.0009766)." KB/s|transmit=".($transmit*0.0009766)."; recieve=".($recieve*0.0009766).";\n";
+		exit $ERRORS{'WARNING'};
+	} else {
+		print "ETH0 CRITICAL - transmit, recieve: ".($transmit*0.0009766)." KB/s, ".($recieve*0.0009766)." KB/s|transmit=".($transmit*0.0009766)."; recieve=".($recieve*0.0009766).";\n";
+		exit $ERRORS{'CRITICAL'};
+	}
+}

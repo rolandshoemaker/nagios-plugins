@@ -1,8 +1,5 @@
 #!/usr/bin/perl
 
-# very basic plugin to check the battery charge (if you are stangely running on a laptop), only works on localhost
-# roland shoemaker june 2014
-
 use strict;
 use warnings;
 
@@ -20,14 +17,14 @@ $result =~ s/\s+//;
 @splited = split(/:/, $result,);
 
 if (substr($splited[1], 0, -2) > 25) {
-	print "BATTERY OK - ".substr($splited[1], 0, -1)." percent\n";
+	print "BATTERY OK - ".substr($splited[1], 0, -1)." percent|battery=".substr($splited[1], 0, -1).";";
 	exit $ERRORS{'OK'};
 } elsif (substr($splited[1], 0, -2) <= 25) {
 	if (substr($splited[1], 0, -2) > 15) {
-		print "BATTERY WARNING - ".substr($splited[1], 0, -1)." percent\n";
+		print "BATTERY WARNING - ".substr($splited[1], 0, -1)." percent|battery=".substr($splited[1], 0, -1).";";
 		exit $ERRORS{'WARNING'};
 	} elsif (substr($splited[1], 0, -2) <= 15) {
-		print "BATTERY CRITICAL - ".substr($splited[1], 0, -1)." percent\n";
+		print "BATTERY CRITICAL - ".substr($splited[1], 0, -1)." percent|battery=".substr($splited[1], 0, -1).";";
 		exit $ERRORS{'CRITICAL'};
 	}
 }
