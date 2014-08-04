@@ -3,11 +3,18 @@
 use strict;
 use warnings;
 
+use Getopt::Std;
 use lib qw( /usr/lib/nagios/plugins );
 use utils qw(%ERRORS $TIMEOUT &print_revision &support &usage);
 
 my @speeds;
-my $interface = $ARGV[0]; # can set this via argument later...
+my %opts;
+getopts("i:", \%opts);
+if (!$opts{i}) {
+	print "Argument -i (interface) is required\n";
+	exit(0);
+}
+my $interface = $opts{i} if defined $opts{i};
 
 # first pass
 

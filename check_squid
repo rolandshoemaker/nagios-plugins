@@ -5,11 +5,18 @@ use warnings;
 
 use lib qw( /usr/lib/nagios/plugins );
 use utils qw(%ERRORS $TIMEOUT &print_revision &support &usage);
+use Getopt::Std;
 
-my $statuscode = `env http_proxy=http://pazu-lxc:3128 wget --spider -S "www.google.com" 2>&1 | grep "HTTP/" | awk '{print \$2}'`;
+my %opts;
+my $host = "localhost";
+getopts("H:", \%opts);
+
+$host = $opts{H} if defined $opts{H};
+
+my $statuscode = `env http_proxy=http://$host:3128 wget --spider -S "www.google.com" 2>&1 | grep "HTTP/" | awk '{print \$2}'`;
 chomp($statuscode);
 
-if ($statuscode == "200") {
+if ($statuscode == "200" && $host eq "localhost") {
 	my $connections = `netstat -nat | grep :3128 | grep ESTABLISHED| wc -l`;
 	chomp($connections);
 	if ($connections < 250) {
@@ -18,7 +25,10 @@ if ($statuscode == "200") {
 	} else {
 		print "SQUID WARNING - current connections: ".$connections."|connections=".$connections.";";
 		exit $ERRORS{'WARNING'};
-	}	
+	}
+} elsif ($statuscode == "200" && $host ne "localhost") {
+	print "SQUID OK";
+	exit $ERRORS{'OK'};
 } else {
 	print "SQUID CRITICAL - Status Code ".$statuscode;
 	exit $ERRORS{'CRITICAL'};
