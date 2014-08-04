@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use lib qw( /usr/lib/nagios/plugins );
+use utils qw(%ERRORS $TIMEOUT &print_revision &support &usage);
+use Getopt::Std;
+
+my %opts;
+my $warning = -2;
+getopts("t:f:F", \%opts);
+
+if ($opts{f} && $opts{f} > 0) {
+	my $fan = &check_fan($opts{f});
+	print "HPLOG - FAN ".$opts{f}.": ".$fan."%|speed=".$fan."%;";
+}
+
+if ($opts{F}) {
+	
+}
+
+if ($opts{t} && $opts{t} > 0) {
+	my @data = &check_temp($opts{t});
+	if ($data[0] < ($data[1]+$warning)) {
+		print "HPLOG OK - Temperature Sensor ".$opts{t}.": ".$data[0]." C|temp=".$data[0]."C;";
+		exit $ERRORS{'OK'};
+	} else {
+		if ($data[0] >= $data[1]) {
+			print "HPLOG CRITICAL - Temperature Sensor ".$data[0]."|temp=".$data[0]."C;";
+			exit $ERRORS{'CRITICAL'};
+		} else {
+			print "HPLOG WARNING - Temperature Sensor ".$data[0]."|temp=".$data[0]."C;";
+			exit $ERRORS{'WARNING'};
+		}
+	}
+}
+
+sub mean {
+        return sum(@_)/@_;
+}
+
+sub check_temp() {
+	my $id = $_[0];
+	my @temps = `sudo hplog -t`;
+
+	if ($id > 0 && $temps[$id] =~ /.*\d*F\/\s(\d*)C\s\d*F\/\s(\d*)C/) {
+        	return ($1, $2);
+	}
+}
+
+sub check_fan() {
+	my $id = $_[0];
+	my @fans = `sudo hplog -f`;
+	print $fans[$id]."\n";
+	if ($id > 0) {
+		my $speed = substr($fans[$id], length($fans[$id])-5, -2);
+		return $speed;
+        }
+
+}
