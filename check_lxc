@@ -15,33 +15,46 @@ parser.add_argument("-s", action="store_true", help="Show number of stopped cont
 parser.add_argument("-f", action="store_true", help="Show number of frozen containers")
 args = parser.parse_args()
 
-hosts = []
-
-for container in lxc.list_containers(as_object=True):
-	if container.running:
-		# check if container.name is in the filter list if the list list is a thing....
-		hosts.append(container)
-
-# number of running hosts
-print("containers running: "+str(len(hosts)))
-
-# exit(0): OK, exit(1): WARNING, exit(2): CRITICAL
-
 # msg_prefix + msg_plain + '|' + msg_data (nagios output format)
+msg_plain = []
+msg_data = []
 
+exit_level = 0
+
+hosts = []
+active_hosts = []
+stopped_hosts = []
+frozen_hosts = []
 memory = []
-for host in hosts:
-	try:
-		memory_ram = int(host.get_cgroup_item("memory.usage_in_bytes"))
-	except:
-		memory_ram = 0
 
-	try:
-		memory_swap = int(host.get_cgroup_item("memory.memsw.usage_in_bytes"))-memory_ram
-	except:
-		memory_swap = 0
+def get_hosts():
+	for container in lxc.list_containers(as_object=True):
+		if container.running:
+			if not args.filter or (container.name in args.filter): 
+				hosts.append(container)
+#		elif container.active:
+#			if not args.filter or (container.name in args.filter):
+#				active_hosts.append(container)
+#		elif container.stopped:
+#			if not args.filter or (container.name in args.filter):
+#				stopped_hosts.append(container)
+#		elif container.frozen:
+#			if not args.filter or (container.name in args.filter):
+#				frozen_hosts.append(container) 
 
-	memory.append(memory_ram+memory_swap)
+def get_memory():
+	for host in hosts:
+		try:
+			memory_ram = int(host.get_cgroup_item("memory.usage_in_bytes"))
+		except:
+			memory_ram = 0
+
+		try:
+			memory_swap = int(host.get_cgroup_item("memory.memsw.usage_in_bytes"))-memory_ram
+		except:
+			memory_swap = 0
+
+		memory.append(memory_ram+memory_swap)
 
 def mean(stuff):
 	return sum(stuff)/len(stuff)
@@ -58,4 +71,48 @@ def readable_bytes(input_bytes):
 	else:
 		return str(byte_to_mb(input_bytes))+"MB"
 
-print("total: "+readable_bytes(sum(memory))+", average: "+readable_bytes(mean(memory)))
+def print_running():
+	msg_plain.append("Containers running: "+str(len(hosts)))
+	msg_data.append("running="+str(len(hosts)))
+
+def print_stopped():
+        msg_plain.append("Containers stopped: "+str(len(stopped_hosts)))
+        msg_data.append("stopped="+str(len(stopped_hosts)))
+
+def print_active():
+        msg_plain.append("Containers active: "+str(len(active_hosts)))
+        msg_data.append("active="+str(len(active_hosts)))
+
+def print_frozen():
+        msg_plain.append("Containers frozen: "+str(len(frozen_hosts)))
+        msg_data.append("frozen="+str(len(frozen_hosts)))
+
+def print_total_memory():
+	msg_plain.append("Total Memory usage: "+readable_bytes(sum(memory)))
+	msg_data.append("totalmem="+str(byte_to_mb(sum(memory)))+"MB")
+
+def print_average_memory():
+	msg_plain.append("Average Memory usage: "+readable_bytes(mean(memory)))
+	msg_data.append("averagemem="+str(byte_to_mb(mean(memory)))+"MB")
+
+# CHECK OPTIONS HERE
+if not args.filter and not args.M and not args.m and not args.r and not args.a and not args.s and not args.f:
+	get_hosts()
+	get_memory()
+	print_running()
+#	print_stopped()
+	print_total_memory()
+	print_average_memory()
+
+# Print the nagios output style
+# msg_prefix + msg_plain + '|' + msg_data (nagios output format) (calculate msg_prefix based on exit_level)
+# exit(0): OK, exit(1): WARNING, exit(2): CRITICAL
+if exit_level in [0,1,2]:
+	if exit_level is 0:
+		print("LXC OK - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+	elif exit_level is 1:
+		print("LXC WARNING - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+	elif exit_level is 2:
+		print("LXC CRITICAL - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+
+	exit(exit_level)
