@@ -3,10 +3,9 @@
 import lxc
 import sys
 import argparse
-import pprint
 
 parser = argparse.ArgumentParser()
-parser.add_argument("filter", nargs="?", type=str, help="filter the checked containers with a comma seperated list")
+parser.add_argument("filter", nargs="?", help="filter the checked containers with a comma seperated list (check_lxc c1,c2,c3)")
 parser.add_argument("-m", action="store_true", help="Show average memory usage of all containers or filtered containers")
 parser.add_argument("-M", action="store_true", help="Show total memory usage of all containers or filtered containers")
 parser.add_argument("-r", action="store_true", help="Show number of running containers")
@@ -72,28 +71,34 @@ def readable_bytes(input_bytes):
 		return str(byte_to_mb(input_bytes))+"MB"
 
 def print_running():
-	msg_plain.append("Containers running: "+str(len(hosts)))
-	msg_data.append("running="+str(len(hosts)))
+	if len(hosts) > 0:
+		msg_plain.append("Containers running: "+str(len(hosts)))
+		msg_data.append("running="+str(len(hosts)))
 
 def print_stopped():
-        msg_plain.append("Containers stopped: "+str(len(stopped_hosts)))
-        msg_data.append("stopped="+str(len(stopped_hosts)))
+	if len(stopped_hosts) > 0:
+	        msg_plain.append("Containers stopped: "+str(len(stopped_hosts)))
+        	msg_data.append("stopped="+str(len(stopped_hosts)))
 
 def print_active():
-        msg_plain.append("Containers active: "+str(len(active_hosts)))
-        msg_data.append("active="+str(len(active_hosts)))
+	if len(active_hosts) > 0:
+	        msg_plain.append("Containers active: "+str(len(active_hosts)))
+        	msg_data.append("active="+str(len(active_hosts)))
 
 def print_frozen():
-        msg_plain.append("Containers frozen: "+str(len(frozen_hosts)))
-        msg_data.append("frozen="+str(len(frozen_hosts)))
+	if len(frozen_hosts) > 0:
+	        msg_plain.append("Containers frozen: "+str(len(frozen_hosts)))
+        	msg_data.append("frozen="+str(len(frozen_hosts)))
 
 def print_total_memory():
-	msg_plain.append("Total Memory usage: "+readable_bytes(sum(memory)))
-	msg_data.append("totalmem="+str(byte_to_mb(sum(memory)))+"MB")
+	if len(memory) > 0:
+		msg_plain.append("Total Memory usage: "+readable_bytes(sum(memory)))
+		msg_data.append("totalmem="+str(byte_to_mb(sum(memory)))+"MB")
 
 def print_average_memory():
-	msg_plain.append("Average Memory usage: "+readable_bytes(mean(memory)))
-	msg_data.append("averagemem="+str(byte_to_mb(mean(memory)))+"MB")
+	if len(memory) >= 2:
+		msg_plain.append("Average Memory usage: "+readable_bytes(mean(memory)))
+		msg_data.append("averagemem="+str(byte_to_mb(mean(memory)))+"MB")
 
 # CHECK OPTIONS HERE
 # default (no args except filter which is handled in get_hosts() anyway)
@@ -127,7 +132,7 @@ if args.M or args.m or args.r or args.a or args.s or args.f:
 # Print the nagios output style
 # msg_prefix + msg_plain + '|' + msg_data (nagios output format) (calculate msg_prefix based on exit_level)
 # exit(0): OK, exit(1): WARNING, exit(2): CRITICAL
-if exit_level in [0,1,2]:
+if exit_level in [0,1,2] and len(msg_plain) > 0 and len(msg_data) > 0:
 	if exit_level is 0:
 		print("LXC OK - "+", ".join(msg_plain)+"|"+"; ".join(msg_data)+";")
 	elif exit_level is 1:
@@ -136,3 +141,8 @@ if exit_level in [0,1,2]:
 		print("LXC CRITICAL - "+", ".join(msg_plain)+"|"+"; ".join(msg_data)+";")
 
 	exit(exit_level)
+else:
+	if exit_level not in [0,1,2]:
+		print("Invalid exit level")
+	if not len(msg_plain) > 0 and not len(msg_data) > 0:
+		print("No matching hosts found")
