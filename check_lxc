@@ -6,19 +6,20 @@ import argparse
 import pprint
 
 parser = argparse.ArgumentParser()
-parser.add_argument("filter", nargs="?", help="filter the checked containers with a comma seperated list")
-parser.add_argument("-a", nargs="0", help="Show average memory usage of all containers or filtered containers")
-parser.add_argument("-t", nargs="0", help="Show total memory usage of all containers or filtered containers")
-parser.add_argument("-r", nargs="0", help="Show number of running containers")
-parser.add_argument("-a", nargs="0", help="Show number of active containers")
-parser.add_argument("-s", nargs="0", help="Show number of stopped containers")
-parser.add_argument("-f", nargs="0", help="Show number of frozen containers")
+parser.add_argument("filter", nargs="?", type=str, help="filter the checked containers with a comma seperated list")
+parser.add_argument("-m", action="store_true", help="Show average memory usage of all containers or filtered containers")
+parser.add_argument("-M", action="store_true", help="Show total memory usage of all containers or filtered containers")
+parser.add_argument("-r", action="store_true", help="Show number of running containers")
+parser.add_argument("-a", action="store_true", help="Show number of active containers")
+parser.add_argument("-s", action="store_true", help="Show number of stopped containers")
+parser.add_argument("-f", action="store_true", help="Show number of frozen containers")
 args = parser.parse_args()
 
 hosts = []
 
 for container in lxc.list_containers(as_object=True):
 	if container.running:
+		# check if container.name is in the filter list if the list list is a thing....
 		hosts.append(container)
 
 # number of running hosts
