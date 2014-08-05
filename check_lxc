@@ -32,15 +32,15 @@ def get_hosts():
 		if container.running:
 			if not args.filter or (container.name in args.filter): 
 				hosts.append(container)
-#		elif container.active:
-#			if not args.filter or (container.name in args.filter):
-#				active_hosts.append(container)
-#		elif container.stopped:
-#			if not args.filter or (container.name in args.filter):
-#				stopped_hosts.append(container)
-#		elif container.frozen:
-#			if not args.filter or (container.name in args.filter):
-#				frozen_hosts.append(container) 
+		elif container.state in ["RUNNING", "FROZEN", "UNKNOWN"]:
+			if not args.filter or (container.name in args.filter):
+				active_hosts.append(container)
+		elif container.state is "STOPPED":
+			if not args.filter or (container.name in args.filter):
+				stopped_hosts.append(container)
+		elif container.state is "FROZEN":
+			if not args.filter or (container.name in args.filter):
+				frozen_hosts.append(container) 
 
 def get_memory():
 	for host in hosts:
