@@ -1,0 +1,50 @@
+#!/usr/bin/python3
+
+import lxc
+import sys
+import pprint
+
+hosts = []
+
+for container in lxc.list_containers(as_object=True):
+	if container.running:
+		hosts.append(container)
+
+# number of running hosts
+print("containers running: "+str(len(hosts)))
+
+# exit(0): OK, exit(1): WARNING, exit(2): CRITICAL
+
+# msg_prefix + msg_plain + '|' + msg_data (nagios output format)
+
+memory = []
+for host in hosts:
+	try:
+		memory_ram = int(host.get_cgroup_item("memory.usage_in_bytes"))
+	except:
+		memory_ram = 0
+
+	try:
+		memory_swap = int(host.get_cgroup_item("memory.memsw.usage_in_bytes"))-memory_ram
+	except:
+		memory_swap = 0
+
+	memory.append(memory_ram+memory_swap)
+
+def mean(stuff):
+	return sum(stuff)/len(stuff)
+
+def byte_to_mb(bytes):
+	return int(bytes/1048576)
+
+def byte_to_gb(bytes):
+	return format(float(bytes/1073741824), '.2f')
+
+def readable_bytes(input_bytes):
+	if input_bytes >= 1073741824:
+		return str(byte_to_gb(input_bytes))+"GB"
+	else:
+		return str(byte_to_mb(input_bytes))+"MB"
+
+print("total: "+readable_bytes(sum(memory))+", average: "+readable_bytes(mean(memory)))
+
