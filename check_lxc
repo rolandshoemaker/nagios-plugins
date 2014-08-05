@@ -2,7 +2,18 @@
 
 import lxc
 import sys
+import argparse
 import pprint
+
+parser = argparse.ArgumentParser()
+parser.add_argument("filter", nargs="?", help="filter the checked containers with a comma seperated list")
+parser.add_argument("-a", nargs="0", help="Show average memory usage of all containers or filtered containers")
+parser.add_argument("-t", nargs="0", help="Show total memory usage of all containers or filtered containers")
+parser.add_argument("-r", nargs="0", help="Show number of running containers")
+parser.add_argument("-a", nargs="0", help="Show number of active containers")
+parser.add_argument("-s", nargs="0", help="Show number of stopped containers")
+parser.add_argument("-f", nargs="0", help="Show number of frozen containers")
+args = parser.parse_args()
 
 hosts = []
 
@@ -47,4 +58,3 @@ def readable_bytes(input_bytes):
 		return str(byte_to_mb(input_bytes))+"MB"
 
 print("total: "+readable_bytes(sum(memory))+", average: "+readable_bytes(mean(memory)))
-
