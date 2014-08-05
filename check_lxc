@@ -32,13 +32,13 @@ def get_hosts():
 		if container.running:
 			if not args.filter or (container.name in args.filter): 
 				hosts.append(container)
-		elif container.state in ["RUNNING", "FROZEN", "UNKNOWN"]:
+		if container.state in ["RUNNING", "FROZEN", "UNKNOWN"]:
 			if not args.filter or (container.name in args.filter):
 				active_hosts.append(container)
-		elif container.state is "STOPPED":
+		if container.state == "STOPPED":
 			if not args.filter or (container.name in args.filter):
 				stopped_hosts.append(container)
-		elif container.state is "FROZEN":
+		if container.state == "FROZEN":
 			if not args.filter or (container.name in args.filter):
 				frozen_hosts.append(container) 
 
@@ -96,23 +96,43 @@ def print_average_memory():
 	msg_data.append("averagemem="+str(byte_to_mb(mean(memory)))+"MB")
 
 # CHECK OPTIONS HERE
-if not args.filter and not args.M and not args.m and not args.r and not args.a and not args.s and not args.f:
+# default (no args except filter which is handled in get_hosts() anyway)
+if not args.M and not args.m and not args.r and not args.a and not args.s and not args.f:
 	get_hosts()
 	get_memory()
 	print_running()
-#	print_stopped()
+	print_stopped()
 	print_total_memory()
 	print_average_memory()
+
+# any options (except filter!)
+if args.M or args.m or args.r or args.a or args.s or args.f:
+	get_hosts()
+
+	if args.M or args.m:
+		get_memory()
+		if args.M:
+			print_total_memory()
+		if args.m:
+			print_average_memory()
+	if args.r:
+		print_running()
+	if args.s:
+		print_stopped()
+	if args.a:
+		print_active()
+	if args.f:
+		print_frozen()
 
 # Print the nagios output style
 # msg_prefix + msg_plain + '|' + msg_data (nagios output format) (calculate msg_prefix based on exit_level)
 # exit(0): OK, exit(1): WARNING, exit(2): CRITICAL
 if exit_level in [0,1,2]:
 	if exit_level is 0:
-		print("LXC OK - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+		print("LXC OK - "+", ".join(msg_plain)+"|"+"; ".join(msg_data)+";")
 	elif exit_level is 1:
-		print("LXC WARNING - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+		print("LXC WARNING - "+", ".join(msg_plain)+"|"+"; ".join(msg_data)+";")
 	elif exit_level is 2:
-		print("LXC CRITICAL - "+", ".join(msg_plain)+"|"+"; ".join(msg_data))
+		print("LXC CRITICAL - "+", ".join(msg_plain)+"|"+"; ".join(msg_data)+";")
 
 	exit(exit_level)
